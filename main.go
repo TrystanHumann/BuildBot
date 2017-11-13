@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"strings"
 	"math/rand"
+	"strconv"
 )
 
 type Configuration struct {
@@ -19,6 +20,7 @@ type Configuration struct {
 
 type Build struct {
   ID int `storm:"id,increment"`
+  SubmittedBy string `storm:"index"`
   BuildName string `storm:"index"`
   Matchup string `storm:"index"`
   Type string `storm:"index"`
@@ -63,75 +65,40 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<- sc
-
-	// if Command == "get" {
-	// 	getBuild(db, Match, BuildType)
-	// } else {
-	// 	saveBuild(db, BuildName, Match, BuildType, BuildOrder)
-	// }
-
-
-	// build := Build{
-	// 	Matchup: Match,
-	// 	Type: BuildType,
-	// 	Build: "Test",
-	// }
-
-	// err = db.Save(&build)
-	// if handleErr(err) {
-	// 	return
-	// }
-
-
-
-	// fmt.Println(returnBuild(Match, BuildType))
-	// reader := bufio.NewReader(os.Stdin)
-    // var input string
-	// for input != ":close" {
-    //     fmt.Print("Enter message or command: ")
-    //     text, err := reader.ReadString('\n')
-    //     input = strings.TrimSuffix(strings.Trim(text, ""), "\n") // assigning text to input
-    //     if err != nil {
-    //         fmt.Println(err)
-    //     }
- 
-    //     if input != ":close" {
-    //         _, err := disc.ChannelMessageSend("CHANNEL ID", input)
-    //         if err != nil {
-    //             fmt.Println(err)
-    //         }
-    //     }
-        // } else {
-        //  // closing
-        //  fmt.Println("Hehe")
-        //  break
-        // }
-    // }
 }
 
 func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
-	// fmt.Println(mess)
 	db, err := storm.Open("my.db")
 	if err != nil{
 		fmt.Println(err)
 	}
 	defer db.Close()
 	slice := strings.Split(mess.Message.Content, " ")
+	fmt.Println(mess.Author)
+	fmt.Println(len(slice))
 	if slice[0] == "!buildbot" {
-		if len(slice) <= 2 {
-			sess.ChannelMessageSend(mess.ChannelID, "Error has occured.\n\nUse the following format:  \nGet: !buildbot [get] [matchup] [type]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]")
+		if len(slice) <= 1 {
+			sess.ChannelMessageSend(mess.ChannelID, "\n\nUse the following format:  \nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]")
 			return
 		}
-		if slice[1] == "get" && slice[2] != "" {
+		if slice[1] == "get" && len(slice) > 3 {
 			sess.ChannelMessageSend(mess.ChannelID, getBuild(db, slice[2], slice[3]))
-		} else if slice[1] == "save" && slice[2] != "" {
-			saveBuild(db, slice[2], slice[3], slice[4], slice[5])
+		} else if slice[1] == "save" && len(slice) > 5 {
+			if err != nil {
+				sess.ChannelMessageSend(mess.ChannelID, "\n\nUse the following format:  \nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]")
+				return
+			}
+			saveBuild(db, slice[2], slice[3], slice[4], slice[5:len(slice)], mess.Author.String())
 			sess.ChannelMessageSend(mess.ChannelID, "Saved Build.")
+		} else if slice[1] == "help" {
+			sess.ChannelMessageSend(mess.ChannelID, "Current Commands:\n\nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]")
+		} else if slice[1] == "status" {
+			sess.ChannelMessageSend(mess.ChannelID, "Current Status: Online\n\nBuild count: " + getAllBuildCount(db) )
+		} else if slice[1] == "info" {
+			sess.ChannelMessageSend(mess.ChannelID, "Created by: Enlisted Reb\nCommunity driven and free to use! Please follow my progress at https://github.com/TrystanHumann \nIf you have any questions or ideas you want to share, add me on discord! :D EnlistedReb#8778")
+		} else {	
+			sess.ChannelMessageSend(mess.ChannelID, "Current Commands:\n\nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]")
 		}
-		fmt.Println("Shitty message author: ", mess.Message.Author)
-		fmt.Println("Shitty Message content: ", mess.Message.Content)
-		// sess.ChannelMessageSend(mess.ChannelID,  slice[1])
-		// saveBuild(db, slice[1], slice[2], slice[3], "hi")
 	}
 	db.Close()
 }
@@ -144,20 +111,29 @@ func handleErr(err error) bool {
 	return false
 }
 
-func saveBuild(db *storm.DB, buildName string, match string, buildType string, buildOrder string) {
-	
+func saveBuild(db *storm.DB, buildName string, match string, buildType string, buildOrder[] string, submittedBy string) error {
+	var i string
+	fmt.Println(buildOrder)
+	for _, element := range buildOrder {
+		i += element + " "
+	}
+
 	build := Build{
+		SubmittedBy: submittedBy,
 		BuildName: buildName,
 		Matchup: match,
 		Type: buildType,
-		Build: buildOrder,
+		Build: i,
 	}
 
 	err := db.Save(&build)
 	if handleErr(err) {
-		return
+		return err
 	}
+			
+
 	fmt.Println("Saved build Order")
+	return err
 }
 
 func getBuild(db *storm.DB, match string, buildType string) string {
@@ -165,7 +141,20 @@ func getBuild(db *storm.DB, match string, buildType string) string {
 	err := db.Find("Matchup", match, &build)
 	if handleErr(err) {
 		fmt.Println(err)
+		return "Error finding build order. Try again please!"
 	}
 	randNum := rand.Intn(len(build))
-	return "Build Name: " + build[randNum].BuildName + "\n" + "Matchup: " + build[randNum].Matchup+ "\n" + "Build Type:" + build[randNum].Type + "\n" + "Build: " + build[randNum].Build
+	formattedBuild := strings.Replace(build[randNum].Build, ",", "\n", -1)
+	return "Build Name: " + build[randNum].BuildName + "\n" + "Matchup: " + build[randNum].Matchup+ "\n" + "Build Type: " + build[randNum].Type + "\nSubmitted By: "+ build[randNum].SubmittedBy+ "\n" + "---Build--- \n" + formattedBuild
+}
+
+func getAllBuildCount(db *storm.DB) string {
+	var build []Build
+	err := db.All(&build)
+	if handleErr(err) {
+		fmt.Println(err)
+		return "Error finding build count. Try again please!"
+	}
+	s := strconv.Itoa(len(build))
+	return s
 }
