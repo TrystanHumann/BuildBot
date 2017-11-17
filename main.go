@@ -48,7 +48,7 @@ var limitPerDay = 3000
 var messageMaxLength = 10000
 var numRequestDaily = 0
 
-var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type] [name] \nGet(any): !buildbot [get] [any]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nRandom: !buildbot [random] [matchup]\nMod: !buildbot [mod]\n\nExample: !buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
+var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: !buildbot [help]\nStatus: !buildbot [status]\nInfo: !buildbot [info]\nGet: !buildbot [get] [matchup] [type] [name] \nGet(any): !buildbot [get] [any]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nRandom: !buildbot [random] [matchup]\nMod: !buildbot [mod]\n\nExample: !buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
 var modFormattedHelper="\n\nCurrent Moderator Commands: \nWhitelist: !buildbot [whitelist] [DiscordUserName#0123]\nGet Build Id: !buildbot [id] [build name]\nDelete: !buildbot [delete] [build id]"
 func main() {
 	//Set up auto restart for daily limit requests (Don't hit server limit because I'm broke.)
@@ -195,7 +195,6 @@ func saveBuild(db *storm.DB, buildName string, match string, buildType string, b
 	var i string
 	match = strings.ToLower(match)
 	buildType = strings.ToLower(buildType)
-	fmt.Println(buildOrder)
 	for _, element := range buildOrder {
 		i += element + " "
 	}
