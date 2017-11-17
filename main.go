@@ -48,8 +48,8 @@ var limitPerDay = 3000
 var messageMaxLength = 10000
 var numRequestDaily = 0
 
-var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type] [name] \nGet(any): !buildbot [get] [any]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nRandom: !buildbot [random] [matchup]\n\nExample: !buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
-
+var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: !buildbot [help]\nStatus: !buildbot [status]\nGet: !buildbot [get] [matchup] [type] [name] \nGet(any): !buildbot [get] [any]\nSave: !buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nRandom: !buildbot [random] [matchup]\nMod: !buildbot [mod]\n\nExample: !buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
+var modFormattedHelper="\n\nCurrent Moderator Commands: \nWhitelist: !buildbot [whitelist] [DiscordUserName#0123]\nGet Build Id: !buildbot [id] [build name]\nDelete: !buildbot [delete] [build id]"
 func main() {
 	//Set up auto restart for daily limit requests (Don't hit server limit because I'm broke.)
 	go (func() {
@@ -157,10 +157,23 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 			sess.ChannelFileSend(mess.ChannelID, "my.db", f)
 			f.Close()
 		} else if slice[1] == "id" && len(slice) > 2 {
+			if !CheckWhiteList(db, mess.Author.String()) {
+				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
+				return
+			}
 			sess.ChannelMessageSend(mess.ChannelID, getOneBuildId(db, slice[2]))
 		} else if slice[1] == "delete" && len(slice) > 2 {
-			deleteBuild(db, slice[2])
-			sess.ChannelMessageSend(mess.ChannelID, getOneBuildId(db, slice[2]))
+			if !CheckWhiteList(db, mess.Author.String()) {
+				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
+				return
+			}
+			sess.ChannelMessageSend(mess.ChannelID, deleteBuild(db, slice[2]))
+		} else if slice[1] == "mod" && len(slice) > 1 {
+			if !CheckWhiteList(db, mess.Author.String()) {
+				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
+				return
+			}
+			sess.ChannelMessageSend(mess.ChannelID, modFormattedHelper)
 		} else {
 			sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
 		}
@@ -284,33 +297,21 @@ func getOneBuildId(db *storm.DB, search string) string {
 
 //getBuildOneItemSearch ... search for a build based on the first keyword
 func deleteBuild(db *storm.DB, searchId string) string {
-
-	//test
-	var builderrr Build
-	thisisanerror := db.One("ID", 7, &builderrr)
-	if thisisanerror != nil {
-		fmt.Println(thisisanerror)
-	}
-	fmt.Println(builderrr)
-	//end test
-
 	var build Build
-	fmt.Println("Trying to delete" + searchId)
 	convNum, err := strconv.Atoi(searchId)
 	if handleErr(err) {
 		return "An error has occured, put an integer id." + err.Error()
 	}
-	fmt.Println(convNum)
 	err = db.One("ID", convNum, &build)
 	if handleErr(err) {
-		return "An error has occured. blah blah blah" + err.Error()
+		return "An error has occured. " + err.Error()
 	}
 	buildName := build.BuildName
-	err = db.Drop(&build)
+	fmt.Println("ima delete it for real" + buildName)
+	err = db.DeleteStruct(&build)
 	if handleErr(err) {
 		return "An error has occured." + err.Error()
 	}
-
 	return "Deleted Build Named: " + buildName
 }
 
