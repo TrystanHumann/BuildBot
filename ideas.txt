@@ -1,0 +1,12 @@
+IDEAS: list more here if you have them - vote on priority please (one vote per person please, just list numbers ranked highest to lowest)
+
+Unique User count - COMPLETED 11/17/2017 - 1, 
+Save user's rank - - 4, 
+Most popular builds - - 2, 
+Ranking system to vote up and down builds - - 3, 
+MMR addition when linking users? - - 5, 
+Let coaches sign up? - - 6,
+Coaching request command - - 6,
+Coaching remove command - - 6,
+Limit user requests (3000 a day) - - 7
+Check server id and get roles from that server for the user to whitelist - - 8
