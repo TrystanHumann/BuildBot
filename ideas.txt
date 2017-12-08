@@ -8,7 +8,7 @@ MMR addition when linking users? - - 5,
 Let coaches sign up? - - 6,
 Coaching request command - - 6,
 Coaching remove command - - 6,
-Limit user requests (3000 a day) - - 7
+Limit user requests (3000 a day) -COMPLETED  - 7
 Check server id and get roles from that server for the user to whitelist - - 8
-Change ! to @ so auto fills
-New command: list [matchup] to list all named builds so people can decide :)
+Change ! to @ so auto fills COMPLETED 
+New command: list [matchup] to list all named builds so people can decide :) COMPLETED 
