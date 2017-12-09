@@ -1,7 +1,7 @@
 package utils
 
 import (
-	models "BuildBot/models"
+	models "BuildBot/BuildBot/models"
 	"fmt"
 	"io"
 	"math/rand"
