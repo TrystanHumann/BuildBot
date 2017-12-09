@@ -6,6 +6,7 @@ LABEL vendor="Xd" \
 
 WORKDIR  /usr/local/go/src/github.com/buildbot/
 ADD main.go .
+ADD my.db .
 RUN mkdir utils
 RUN mkdir models
 ADD utils ./utils
