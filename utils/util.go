@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"BuildBot/BuildBot/models"
+	"../models"
 	"fmt"
 	"io"
 	"math/rand"
@@ -17,6 +17,7 @@ import (
 //HandleErr ... error handler, returns a true/false
 func HandleErr(err error) bool {
 	if err != nil {
+		fmt.Println("here I am")
 		fmt.Println(err)
 		return true
 	}

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"BuildBot/BuildBot/utils"
+	"./utils"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,8 +15,8 @@ import (
 )
 
 type Configuration struct {
-	Email    string
-	Password string
+	Username    string
+	Token string
 }
 
 var (
@@ -52,15 +52,15 @@ func main() {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	fmt.Println(configuration.Email)
-
-	disc, err := discordgo.New(configuration.Email, configuration.Password)
+	fmt.Println(configuration.Username)
+	disc, err := discordgo.New(configuration.Token)
 	if err != nil {
 		fmt.Println("Error creating discord session", err)
 		return
 	}
-
 	fmt.Printf("Your Authentication Token is:\n\n%s\n", disc.Token)
+	
+	// disc.Login(disc.Token)
 	err = disc.Open()
 	defer disc.Close()
 	if utils.HandleErr(err) {
@@ -84,15 +84,12 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 	}
 	defer db.Close()
 
-	fmt.Println(mess.Mentions)
-	fmt.Println(mess.Author.String())
-
 	slice := strings.Split(mess.Message.Content, " ")
 	if len(mess.Mentions) <= 0 {
 		return
 	}
 
-	if strings.ToLower(mess.Mentions[0].String()) == sess.State.User.String() {
+	if strings.ToLower(mess.Mentions[0].String()) == strings.ToLower(sess.State.User.String()) {
 		numRequestDaily++ //increment request num to limit requests to server
 		if numRequestDaily > limitPerDay {
 			sess.ChannelMessageSend(mess.ChannelID, "Too many request for the server today. Make more tommorow.")
