@@ -1,7 +1,7 @@
 package main
 
 import (
-	utils "BuildBot/BuildBot/utils"
+	utils "./utils"
 	"encoding/json"
 	"fmt"
 	"os"
