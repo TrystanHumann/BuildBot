@@ -1,7 +1,7 @@
 package main
 
 import (
-	utils "DiscordBots/buildbot/utils"
+	utils "BuildBot/utils"
 	"encoding/json"
 	"fmt"
 	"os"
