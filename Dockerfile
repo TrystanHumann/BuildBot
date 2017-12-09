@@ -24,6 +24,7 @@ RUN go build -o build-bot-executable
 FROM alpine
 WORKDIR /app
 COPY --from=gobuild /usr/local/go/src/github.com/buildbot/build-bot-executable /app
+COPY --from=gofileget /usr/local/go/src/github.com/buildbot/my.db /app
 COPY --from=gofileget /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 ADD ./conf.json .
 
