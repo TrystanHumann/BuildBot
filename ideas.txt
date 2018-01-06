@@ -12,3 +12,7 @@ Limit user requests (3000 a day) -COMPLETED  - 7
 Check server id and get roles from that server for the user to whitelist - - 8
 Change ! to @ so auto fills COMPLETED 
 New command: list [matchup] to list all named builds so people can decide :) COMPLETED 
+Pastebin when list too large
+Rock paper scissors bot inside of it - AI TO TRAIN?
+challange people
+save replays per person

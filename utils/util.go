@@ -1,18 +1,25 @@
 package utils
 
 import (
-	models "github.com/buildbot/models"
+	"bytes"
 	"fmt"
+	"image"
+	"image/color"
 	"io"
 	"math/rand"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
+
+	models "github.com/buildbot/models"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/q"
 )
+
+var rockPaperScissors = [3]string{"rock", "paper", "scissors"}
 
 //HandleErr ... error handler, returns a true/false
 func HandleErr(err error) bool {
@@ -266,4 +273,50 @@ func DownloadUrl(url string, fileName string) error {
 	}
 	fmt.Println(file)
 	return err
+}
+
+//Covert2Ascii ... Converts an image to ascii characters (--- TESTING --- doesn't look great in discord since characters don't have equal size. Look to make equal)
+func Convert2Ascii(img image.Image, w, h int) []byte {
+	table := []byte("ASCIISTR")
+	buf := new(bytes.Buffer)
+
+	for i := 0; i < h; i++ {
+		for j := 0; j < w; j++ {
+			g := color.GrayModel.Convert(img.At(j, i))
+			y := reflect.ValueOf(g).FieldByName("Y").Uint()
+			pos := int(y * 16 / 255)
+			_ = buf.WriteByte(table[pos])
+		}
+		_ = buf.WriteByte('\n')
+	}
+	return buf.Bytes()
+}
+
+func IgnoreCase(originalVal, searchVal string) bool {
+	return strings.EqualFold(originalVal, searchVal)
+}
+
+func RockPaperScissorsGenerator() string {
+	return rockPaperScissors[rand.Intn(2)]
+}
+
+func DecideRockPaperScissorWinner(botDecision, userDecision, username string) (decision, result string) {
+	decision = "I choose " + botDecision + "!"
+	userDecision = strings.ToLower(userDecision)
+	if IgnoreCase(botDecision, userDecision) {
+		result = "It's a tie this time " + username + "!"
+	} else if botDecision == "rock" && userDecision == "paper" {
+		result = "You win " + username + "!"
+	} else if botDecision == "rock" && userDecision == "scissors" {
+		result = "You lose " + username + "!"
+	} else if botDecision == "scissors" && userDecision == "rock" {
+		result = "You win " + username + "!"
+	} else if botDecision == "scissors" && userDecision == "paper" {
+		result = "You lose " + username + "!"
+	} else if botDecision == "paper" && userDecision == "scissors" {
+		result = "You win " + username + "!"
+	} else if botDecision == "paper" && userDecision == "rock" {
+		result = "You lose " + username + "!"
+	}
+	return decision, result
 }

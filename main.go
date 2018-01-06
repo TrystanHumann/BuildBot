@@ -1,7 +1,6 @@
 package main
 
 import (
-	utils "github.com/buildbot/utils"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,13 +9,15 @@ import (
 	"syscall"
 	"time"
 
+	utils "github.com/buildbot/utils"
+
 	"github.com/asdine/storm"
 	"github.com/bwmarrin/discordgo"
 )
 
 type Configuration struct {
-	Username    string
-	Token string
+	Username string
+	Token    string
 }
 
 var (
@@ -31,7 +32,7 @@ var messageMaxLength = 10000
 var fileSize = 40000000
 var numRequestDaily = 0
 
-var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: @buildbot [help]\nStatus: @buildbot [status]\nInfo: @buildbot [info]\nGet: @buildbot [get] [matchup] [type] [name] \nGet(any): @buildbot [get] [any]\nSave: @buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nList: @buildbot [list] [matchup]\nRandom: @buildbot [random] [matchup]\nMod: @buildbot [mod]\n\nExample: @buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
+var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: @buildbot [help]\nStatus: @buildbot [status]\nInfo: @buildbot [info]\nGet: @buildbot [get] [matchup] [type] [name] \nGet(any): @buildbot [get] [any]\nSave: @buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nList: @buildbot [list] [matchup]\nRandom: @buildbot [random] [matchup]\nRock Paper Scissors: @buildbot [rock/paper/scissors]\nMod: @buildbot [mod]\n\nExample: @buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
 var modFormattedHelper = "\n\nCurrent Moderator Commands: \nWhitelist: @buildbot [whitelist] [DiscordUserName#0123]\nGet Build Id: @buildbot [id] [build name]\nDelete: @buildbot [delete] [build id]"
 
 func main() {
@@ -59,7 +60,7 @@ func main() {
 		return
 	}
 	fmt.Printf("Your Authentication Token is:\n\n%s\n", disc.Token)
-	
+
 	// disc.Login(disc.Token)
 	err = disc.Open()
 	defer disc.Close()
@@ -103,7 +104,7 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 			sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
 			return
 		}
-		if slice[1] == "get" {
+		if utils.IgnoreCase(slice[1], "get") {
 			if len(slice) == 5 {
 				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(db, slice[2], slice[3], slice[4]))
 			} else if len(slice) == 4 {
@@ -114,26 +115,26 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 				sess.ChannelMessageSend(mess.ChannelID, "An error has occured.")
 				return
 			}
-		} else if slice[1] == "save" && len(slice) > 5 {
+		} else if utils.IgnoreCase(slice[1], "save") && len(slice) > 5 {
 			if err != nil {
 				sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
 				return
 			}
 			utils.SaveBuild(db, slice[2], slice[3], slice[4], slice[5:len(slice)], mess.Author.String())
 			sess.ChannelMessageSend(mess.ChannelID, "Saved Build.")
-		} else if slice[1] == "help" {
+		} else if utils.IgnoreCase(slice[1], "help") {
 			sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
-		} else if slice[1] == "status" {
+		} else if utils.IgnoreCase(slice[1], "status") {
 			s, r := utils.GetAllBuildCount(db)
 			sess.ChannelMessageSend(mess.ChannelID, "Current Status: Online\nBuild Count: "+s+"\nUnique User Count: "+r)
-		} else if slice[1] == "info" {
+		} else if utils.IgnoreCase(slice[1], "info") {
 			sess.ChannelMessageSend(mess.ChannelID, "Created by: Enlisted Reb\nCommunity driven and free to use! Please follow my progress at https://github.com/TrystanHumann \nIf you have any questions or ideas you want to share, add me on discord! :D EnlistedReb#8778")
-		} else if slice[1] == "random" && len(slice) > 2 {
+		} else if utils.IgnoreCase(slice[1], "random") && len(slice) > 2 {
 			sess.ChannelMessageSend(mess.ChannelID, utils.GetRand(db, slice[2]))
-		} else if slice[1] == "whitelist" && len(slice) > 2 && mess.Author.String() == "EnlistedReb#8778" {
+		} else if utils.IgnoreCase(slice[1], "whitelist") && len(slice) > 2 && mess.Author.String() == "EnlistedReb#8778" {
 			utils.AddToWhiteList(db, slice[2], mess.Author.String())
 			sess.ChannelMessageSend(mess.ChannelID, "User: "+slice[2]+" added to white list by "+mess.Author.String()+". ")
-		} else if slice[1] == "backup" {
+		} else if utils.IgnoreCase(slice[1], "backup") {
 			if !utils.CheckWhiteList(db, mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
@@ -144,32 +145,32 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 			}
 			sess.ChannelFileSend(mess.ChannelID, "my.db", f)
 			f.Close()
-		} else if slice[1] == "id" && len(slice) > 2 {
+		} else if utils.IgnoreCase(slice[1], "id") && len(slice) > 2 {
 			if !utils.CheckWhiteList(db, mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, utils.GetOneBuildId(db, slice[2]))
-		} else if slice[1] == "delete" && len(slice) > 2 {
+		} else if utils.IgnoreCase(slice[1], "delete") && len(slice) > 2 {
 			if !utils.CheckWhiteList(db, mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, utils.DeleteBuild(db, slice[2]))
-		} else if slice[1] == "mod" && len(slice) > 1 {
+		} else if utils.IgnoreCase(slice[1], "mod") && len(slice) > 1 {
 			if !utils.CheckWhiteList(db, mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, modFormattedHelper)
-		} else if slice[1] == "list" {
+		} else if utils.IgnoreCase(slice[1], "list") {
 			s, err := utils.GetListOfBuilds(db, slice[2])
 			if err != nil {
 				sess.ChannelMessageSend(mess.ChannelID, "Couldn't find any builds for that matchup. Add some and try again!")
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, s)
-		} else if slice[1] == "asciiDEVELOPMENT" {
+		} else if utils.IgnoreCase(slice[1], "asciiDEVELOPMENT") {
 			if len(mess.Attachments) <= 0 {
 				sess.ChannelMessageSend(mess.ChannelID, "Try adding an attachment of your favorite picture.")
 				return
@@ -188,6 +189,10 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 			fmt.Println(mess.Attachments[0].Size)
 			fmt.Println("Heres your stuff", mess.Attachments[0].Filename)
 			// sess.ChannelMessageSend(mess.ChannelID, s)
+		} else if utils.IgnoreCase(slice[1], "rock") || utils.IgnoreCase(slice[1], "paper") || utils.IgnoreCase(slice[1], "scissors") {
+			botRockPaperScissorChoice := utils.RockPaperScissorsGenerator()
+			botChoiceOutput, resultOutput := utils.DecideRockPaperScissorWinner(botRockPaperScissorChoice, slice[1], mess.Author.Username)
+			sess.ChannelMessageSend(mess.ChannelID, botChoiceOutput+" "+resultOutput)
 		} else {
 			sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
 		}
