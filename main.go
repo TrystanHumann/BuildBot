@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/asdine/storm"
 	utils "github.com/buildbot/utils"
 
-	"github.com/asdine/storm"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -34,9 +34,10 @@ var numRequestDaily = 0
 
 var displayFormattedHelper = "\n\nCurrent Commands:  \nHelp: @buildbot [help]\nStatus: @buildbot [status]\nInfo: @buildbot [info]\nGet: @buildbot [get] [matchup] [type] [name] \nGet(any): @buildbot [get] [any]\nSave: @buildbot [save] [Name] [Matchup] [BuildType] [Build,Seperated,By,Commas]\nList: @buildbot [list] [matchup]\nRandom: @buildbot [random] [matchup]\nRock Paper Scissors: @buildbot [rock/paper/scissors]\nMod: @buildbot [mod]\n\nExample: @buildbot save 12-Pool zvz cheese 12 Pool,13 Overlord,Spam Lings and A-Move,???,Collect tears"
 var modFormattedHelper = "\n\nCurrent Moderator Commands: \nWhitelist: @buildbot [whitelist] [DiscordUserName#0123]\nGet Build Id: @buildbot [id] [build name]\nDelete: @buildbot [delete] [build id]"
-var db storm.DB
+var db *storm.DB
 
 func main() {
+	db = utils.InitializeDatabase("my.db")
 
 	//Set up auto restart for daily limit requests (Don't hit server limit because I'm broke.)
 	go (func() {
@@ -55,6 +56,7 @@ func main() {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
+
 	fmt.Println(configuration.Username)
 	disc, err := discordgo.New(configuration.Token)
 	if err != nil {
@@ -70,24 +72,22 @@ func main() {
 		return
 	}
 
-	db, err := storm.Open("my.db")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer db.Close()
-
 	disc.AddHandler(RecieveMessage)
 
 	fmt.Println("Click Ctrl+C to close program")
+	defer db.Close()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 }
 
+func returnDB() *storm.DB {
+	return db
+}
+
 // RecieveMessage ... receives messages sent to the bot via any channel it is in
 func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
-
 	slice := strings.Split(mess.Message.Content, " ")
 	if len(mess.Mentions) <= 0 {
 		return
@@ -109,11 +109,11 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 		}
 		if utils.IgnoreCase(slice[1], "get") {
 			if len(slice) == 5 {
-				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(&db, slice[2], slice[3], slice[4]))
+				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(returnDB(), slice[2], slice[3], slice[4]))
 			} else if len(slice) == 4 {
-				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(&db, slice[2], slice[3], ""))
+				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(returnDB(), slice[2], slice[3], ""))
 			} else if len(slice) == 3 {
-				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(&db, slice[2], "", ""))
+				sess.ChannelMessageSend(mess.ChannelID, utils.GetBuild(returnDB(), slice[2], "", ""))
 			} else {
 				sess.ChannelMessageSend(mess.ChannelID, "An error has occured.")
 				return
@@ -123,22 +123,22 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 			// 	sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
 			// 	return
 			// }
-			utils.SaveBuild(&db, slice[2], slice[3], slice[4], slice[5:len(slice)], mess.Author.String())
+			utils.SaveBuild(returnDB(), slice[2], slice[3], slice[4], slice[5:len(slice)], mess.Author.String())
 			sess.ChannelMessageSend(mess.ChannelID, "Saved Build.")
 		} else if utils.IgnoreCase(slice[1], "help") {
 			sess.ChannelMessageSend(mess.ChannelID, displayFormattedHelper)
 		} else if utils.IgnoreCase(slice[1], "status") {
-			s, r := utils.GetAllBuildCount(&db)
+			s, r := utils.GetAllBuildCount(returnDB())
 			sess.ChannelMessageSend(mess.ChannelID, "Current Status: Online\nBuild Count: "+s+"\nUnique User Count: "+r)
 		} else if utils.IgnoreCase(slice[1], "info") {
 			sess.ChannelMessageSend(mess.ChannelID, "Created by: Enlisted Reb\nCommunity driven and free to use! Please follow my progress at https://github.com/TrystanHumann \nIf you have any questions or ideas you want to share, add me on discord! :D EnlistedReb#8778")
 		} else if utils.IgnoreCase(slice[1], "random") && len(slice) > 2 {
-			sess.ChannelMessageSend(mess.ChannelID, utils.GetRand(&db, slice[2]))
+			sess.ChannelMessageSend(mess.ChannelID, utils.GetRand(returnDB(), slice[2]))
 		} else if utils.IgnoreCase(slice[1], "whitelist") && len(slice) > 2 && mess.Author.String() == "EnlistedReb#8778" {
-			utils.AddToWhiteList(&db, slice[2], mess.Author.String())
+			utils.AddToWhiteList(returnDB(), slice[2], mess.Author.String())
 			sess.ChannelMessageSend(mess.ChannelID, "User: "+slice[2]+" added to white list by "+mess.Author.String()+". ")
 		} else if utils.IgnoreCase(slice[1], "backup") {
-			if !utils.CheckWhiteList(&db, mess.Author.String()) {
+			if !utils.CheckWhiteList(returnDB(), mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
@@ -149,25 +149,25 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 			sess.ChannelFileSend(mess.ChannelID, "my.db", f)
 			f.Close()
 		} else if utils.IgnoreCase(slice[1], "id") && len(slice) > 2 {
-			if !utils.CheckWhiteList(&db, mess.Author.String()) {
+			if !utils.CheckWhiteList(returnDB(), mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
-			sess.ChannelMessageSend(mess.ChannelID, utils.GetOneBuildId(&db, slice[2]))
+			sess.ChannelMessageSend(mess.ChannelID, utils.GetOneBuildId(returnDB(), slice[2]))
 		} else if utils.IgnoreCase(slice[1], "delete") && len(slice) > 2 {
-			if !utils.CheckWhiteList(&db, mess.Author.String()) {
+			if !utils.CheckWhiteList(returnDB(), mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
-			sess.ChannelMessageSend(mess.ChannelID, utils.DeleteBuild(&db, slice[2]))
+			sess.ChannelMessageSend(mess.ChannelID, utils.DeleteBuild(returnDB(), slice[2]))
 		} else if utils.IgnoreCase(slice[1], "mod") && len(slice) > 1 {
-			if !utils.CheckWhiteList(&db, mess.Author.String()) {
+			if !utils.CheckWhiteList(returnDB(), mess.Author.String()) {
 				sess.ChannelMessageSend(mess.ChannelID, "You don't have access to this command.")
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, modFormattedHelper)
 		} else if utils.IgnoreCase(slice[1], "list") {
-			s, err := utils.GetListOfBuilds(&db, slice[2])
+			s, err := utils.GetListOfBuilds(returnDB(), slice[2])
 			if err != nil {
 				sess.ChannelMessageSend(mess.ChannelID, "Couldn't find any builds for that matchup. Add some and try again!")
 				return

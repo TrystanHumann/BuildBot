@@ -21,10 +21,18 @@ import (
 
 var rockPaperScissors = [3]string{"rock", "paper", "scissors"}
 
+func InitializeDatabase(database string) *storm.DB {
+	db, err := storm.Open(database)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Database connection established.")
+	return db
+}
+
 //HandleErr ... error handler, returns a true/false
 func HandleErr(err error) bool {
 	if err != nil {
-		fmt.Println("here I am")
 		fmt.Println(err)
 		return true
 	}
