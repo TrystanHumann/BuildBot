@@ -297,7 +297,7 @@ func IgnoreCase(originalVal, searchVal string) bool {
 }
 
 func RockPaperScissorsGenerator() string {
-	return rockPaperScissors[rand.Intn(2)]
+	return rockPaperScissors[rand.Intn(3)]
 }
 
 func DecideRockPaperScissorWinner(botDecision, userDecision, username string) (decision, result string) {
