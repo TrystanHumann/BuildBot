@@ -181,10 +181,20 @@ func GetAllBuildCount(db *storm.DB) (string, string) {
 	return s, r
 }
 
-//getAllBuildCount ... get a build count and unique player count
+//getAllBuildCount ... get all build names in a matchup
 func GetListOfBuilds(db *storm.DB, search string) (string, error) {
 	var build []models.Build
 	err := db.Find("Matchup", search, &build)
+	if !HandleErr(err) {
+		return formatBuildList(build), err
+	}
+	return "No builds found for this matchup", err
+}
+
+//getAllBuildCount ... get a build count and unique player count
+func GetListOfAllBuilds(db *storm.DB) (string, error) {
+	var build []models.Build
+	err := db.All(&build)
 	if !HandleErr(err) {
 		return formatBuildList(build), err
 	}

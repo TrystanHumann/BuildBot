@@ -173,6 +173,13 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, s)
+		} else if utils.IgnoreCase(slice[1], "list") && len(slice) == 2 {
+			s, err := utils.GetListOfAllBuilds(returnDB())
+			if err != nil {
+				sess.ChannelMessageSend(mess.ChannelID, "Couldn't find any builds for that matchup. Add some and try again!")
+				return
+			}
+			sess.ChannelMessageSend(mess.ChannelID, s)
 		} else if utils.IgnoreCase(slice[1], "asciiDEVELOPMENT") {
 			if len(mess.Attachments) <= 0 {
 				sess.ChannelMessageSend(mess.ChannelID, "Try adding an attachment of your favorite picture.")
