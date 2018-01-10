@@ -166,7 +166,7 @@ func RecieveMessage(sess *discordgo.Session, mess *discordgo.MessageCreate) {
 				return
 			}
 			sess.ChannelMessageSend(mess.ChannelID, modFormattedHelper)
-		} else if utils.IgnoreCase(slice[1], "list") {
+		} else if utils.IgnoreCase(slice[1], "list") && len(slice) > 2 {
 			s, err := utils.GetListOfBuilds(returnDB(), slice[2])
 			if err != nil {
 				sess.ChannelMessageSend(mess.ChannelID, "Couldn't find any builds for that matchup. Add some and try again!")
