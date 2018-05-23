@@ -1,4 +1,5 @@
 IDEAS: list more here if you have them - vote on priority please (one vote per person please, just list numbers ranked highest to lowest)
+Download for discord: https://discordapp.com/oauth2/authorize?client_id=388829111696621579&scope=bot&permissions=3072
 
 Unique User count - COMPLETED 11/17/2017 - 1, 
 Save user's rank - - 4, 
