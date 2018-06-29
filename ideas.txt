@@ -15,5 +15,5 @@ Change ! to @ so auto fills COMPLETED
 New command: list [matchup] to list all named builds so people can decide :) COMPLETED 
 Pastebin when list too large
 Rock paper scissors bot inside of it - AI TO TRAIN?
-challange people
+challenge people
 save replays per person
