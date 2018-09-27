@@ -16,3 +16,7 @@ Pastebin when list too large
 Rock paper scissors bot inside of it - AI TO TRAIN?
 challange people
 save replays per person
+blacklist users
+blacklist words
+
+https://discordapp.com/oauth2/authorize?client_id=388829111696621579&scope=bot&permissions=3072
